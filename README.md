@@ -4,7 +4,7 @@ The application is based on the technique of speed reading, due to the fact that
 After reading with this method you will develop a reading habit and reading real texts will become easier for you.
 
 ## Use technologies
-The application is written in python3 + pyside6 + sklearn.
+The application is written in python3 + pyside6 + nltk.
 
 ## ScreenShot
 ![ScreenShot application](https://raw.githubusercontent.com/SHADR1N/qt-reader-fb2/master/ScreenShot.PNG)
