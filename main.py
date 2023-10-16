@@ -1,6 +1,9 @@
 import os
+import shutil
 import sys
 import time
+import icon_rc
+
 from functools import partial
 from typing import Union
 
@@ -8,10 +11,10 @@ from mainUI import Ui_MainWindow
 from read_book import ReaderBook
 
 from PySide6.QtWidgets import (
-    QMainWindow, QLabel, QApplication, QVBoxLayout, QPushButton, QGridLayout, QWidget, QScrollArea
+    QMainWindow, QLabel, QApplication, QVBoxLayout, QPushButton, QGridLayout, QWidget, QScrollArea, QFileDialog
 )
 from PySide6.QtCore import Signal, QThread, QSize, Qt, QSettings, QTimer
-from PySide6.QtGui import QPixmap, QCursor
+from PySide6.QtGui import QPixmap, QCursor, QFont
 
 
 class TileWidget(QWidget):
@@ -56,6 +59,7 @@ class QtBookReader(QMainWindow):
         self.setStyleSheet("""
             * {
                 background: black;
+                color: white;
             }
             QToolButton {
                 background: #dbdbdb;
@@ -68,7 +72,7 @@ class QtBookReader(QMainWindow):
                 color: white;    
             }
             
-            #toolButton, #toolButton_2, #toolButton_3, #toolButton_4, #toolButton_5, #toolButton_6 {
+            #toolButton, #toolButton_2, #toolButton_3, #toolButton_4, #toolButton_5, #toolButton_6, #toolButton_7 {
                 background: none;
                 border: 0px solid #fff;
                 width: 30px;
@@ -76,20 +80,21 @@ class QtBookReader(QMainWindow):
             }
         
             #toolButton:hover, #toolButton_2:hover, #toolButton_3 :hover, #toolButton_4 :hover, #toolButton_5 :hover, 
-            #toolButton_6:hover {
+            #toolButton_6:hover, #toolButton_7:hover {
                 width: 30px;
                 height: 30px;
             }
             
             QPushButton#openBook {
-                border: 1px solid #fff;
+                border: 1px solid #464C55;
                 border-radius: 6px;
                 padding: 3px;
-                background: #dbdbdb;
+                background: #DFF0FE;
                 }
             
             QPushButton#openBook:hover {
-                border: 1px solid #2AA4F4;
+                border: 1px solid #464C55;
+                background: #98CCFD;
             }
             
             #cardsMap {
@@ -131,7 +136,7 @@ class QtBookReader(QMainWindow):
                 background: none;
             }
         """)
-        self.initBook()
+        QTimer.singleShot(0, self.initBook)
 
     def reset_book(self):
         self.thr.stop()
@@ -142,6 +147,30 @@ class QtBookReader(QMainWindow):
         self.ui.toolButton.clicked.connect(self.thr.stop)  # Pause
         self.ui.toolButton_2.clicked.connect(self.reset_book)  # Stop
         self.ui.toolButton_3.clicked.connect(self.thr.start)  # Run
+        self.ui.toolButton_4.clicked.connect(self.copy_book_to_dir)
+        self.ui.toolButton_5.clicked.connect(self.open_setting)
+        self.ui.pushButton.clicked.connect(self.save_setting)
+
+    def open_setting(self):
+        self.ui.stackedWidget.setCurrentWidget(self.ui.setting)
+        word_peer_minutes = self.setting.value("word_peer_minutes", str(300))
+        font_size = self.setting.value("font_size", str(24))
+        self.ui.spinBox.setValue(int(word_peer_minutes))
+        self.ui.spinBox_2.setValue(int(font_size))
+
+    def save_setting(self):
+        wpm = self.ui.spinBox.text()
+        self.setting.setValue("word_peer_minutes", str(wpm))
+
+        fs = self.ui.spinBox_2.text()
+        self.setting.setValue("font_size", str(fs))
+
+        font_size = self.setting.value("font_size", str(24))
+
+        font = QFont()
+        font.setPointSize(int(font_size))
+
+        self.ui.label_2.setFont(font)
 
     def change_content(self):
         key = self.current_book["title"]
@@ -159,8 +188,7 @@ class QtBookReader(QMainWindow):
         button_width = 150
         columns = width // (button_width + 10)  # 10 is for spacing
 
-        for button in self.books:
-            self.gridLayout.grid.removeWidget(button)
+        self.delete_book()
 
         for i, button in enumerate(self.books):
             if columns == 0:
@@ -193,6 +221,41 @@ class QtBookReader(QMainWindow):
         self.ui.label.setText(data_book["title"])
         self.ui.label_2.setText(data_book["tokenize_book"][0])
         self.ui.label_3.setText(str(start_word) + "/" + str(len(data_book["tokenize_book"])))
+
+    def copy_book_to_dir(self):
+        file_path = QFileDialog.getOpenFileName(self, caption="Выберите книгу .fb2", filter="FB2 (*.fb2)")
+        if file_path[0]:
+            file_dir = os.path.join(
+                    "books",
+                    os.path.splitext(
+                        os.path.basename(file_path[0])
+                    )[0] + ".fb2"
+                )
+            if os.path.exists(file_dir):
+                return
+
+            shutil.copy(
+                file_path[0],
+                file_dir
+            )
+            self.update_books()
+
+    def update_books(self):
+        self.initBook()
+        self.resizeEventGrid()
+
+    def delete_book(self, book=None, clear=True):
+        if not book:
+            for button in self.books:
+                self.gridLayout.grid.removeWidget(button)
+                del button
+
+            if not clear:
+                self.books = []
+        else:
+            self.gridLayout.grid.removeWidget(book)
+            self.books.remove(book)
+            del book
 
     def add_book(self, title, image, index, data_book):
         card_book = QWidget(self.ui.mainMenu)
@@ -233,23 +296,35 @@ class QtBookReader(QMainWindow):
         self.ui.verticalLayout_6.addWidget(self.gridLayout)
         self.ui.stackedWidget.setCurrentWidget(self.ui.mainMenu)
         self.ui.toolButton_6.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.mainMenu))
+        self.ui.toolButton_7.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.mainMenu))
 
         self.setting = QSettings("Reader", "App")
+        font_size = self.setting.value("font_size", str(24))
+
+        font = QFont()
+        font.setPointSize(int(font_size))
+
+        self.ui.label_2.setFont(font)
+
         self.thr = QTimer(self)
         self.thr.timeout.connect(self.change_content)
         self.bindButton()
 
     def initBook(self):
+        self.books = []
         book = [b for b in os.listdir("books") if ".fb2" in b]
-
-        for index, book_path in enumerate(book * 10):
+        for index, book_path in enumerate(book):
             book = ReaderBook("books/" + book_path).read_and_tokenize()
+            if not book:
+                continue
+
             book["path_book"] = "books/" + book_path
             self.add_book(book["title"], book["image"], index, book)
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QPixmap(u":/icon/icon.png"))
 
     main = QtBookReader()
 

@@ -37,7 +37,12 @@ class ReaderBook:
 
     def read(self):
         if os.path.exists(self.path_book):
-            tree = ET.parse(self.path_book)
+            try:
+                tree = ET.parse(self.path_book)
+            except:
+                print(f"Не смог загрузить: {self.path_book}")
+                return
+
             root = tree.getroot()
 
             # Extract book title
@@ -76,6 +81,9 @@ class ReaderBook:
 
     def read_and_tokenize(self):
         data = self.read()
+        if not data:
+            return None
+
         tokenize_book = self.tokenaize(data["content"])
         data["tokenize_book"] = tokenize_book
         return data
