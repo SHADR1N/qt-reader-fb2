@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="icon">
+    <file>home.png</file>
+    <file>setting.png</file>
+    <file>add.png</file>
+    <file>icon.png</file>
+    <file>paly.png</file>
+    <file>pause.png</file>
+    <file>stop.png</file>
+  </qresource>
+</RCC>
