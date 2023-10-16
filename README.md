@@ -4,4 +4,4 @@ After reading with this method you will develop a reading habit and reading real
 
 The application is written in python3 + pyside6 + sklearn.
 
-![ScreenShot application]([Image URL](https://github.com/SHADR1N/qt-reader-fb2/blob/master/ScreenShot.PNG)https://github.com/SHADR1N/qt-reader-fb2/blob/master/ScreenShot.PNG)
+![ScreenShot application](./ScreenShot.PNG]
