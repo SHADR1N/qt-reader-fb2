@@ -7,8 +7,16 @@ import string
 import nltk
 
 from nltk.tokenize import word_tokenize
+import ssl
 
-nltk.download('punkt')  # Download the necessary data for NLTK (only needs to be done once)
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+nltk.download('brown')
 
 
 class BookNotFound(Exception):
@@ -65,6 +73,43 @@ class ReaderBook:
             book_content = "\n".join(content)
 
             return {"title": book_title, "author": author, "content": book_content, "image": image}
+        else:
+            raise BookNotFound()
+
+    def tokenaize(self, content: str):
+        # Remove punctuation using str.translate()
+        translator = str.maketrans('', '', string.punctuation)
+        text_no_punct = content.translate(translator)
+
+        # Tokenize the text into words using NLTK
+        words = word_tokenize(text_no_punct)
+
+        # Print the list of words
+        return words
+
+    def read_and_tokenize(self):
+        data = self.read()
+        if not data:
+            return None
+
+        tokenize_book = self.tokenaize(data["content"])
+        data["tokenize_book"] = tokenize_book
+        return data
+
+
+class ReaderBookTXT:
+    def __init__(self, path_book: str):
+        self.path_book = path_book
+
+    def get_image(self, root):
+        return None
+
+    def read(self):
+        if os.path.exists(self.path_book):
+            with open(self.path_book, "r", encoding="utf-8") as fl:
+                book_content = fl.read()
+
+            return {"title": "Unknown", "author": "Unknown", "content": book_content, "image": None}
         else:
             raise BookNotFound()
 

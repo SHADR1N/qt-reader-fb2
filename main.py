@@ -8,7 +8,7 @@ from functools import partial
 from typing import Union
 
 from mainUI import Ui_MainWindow
-from read_book import ReaderBook
+from read_book import ReaderBook, ReaderBookTXT
 
 from PySide6.QtWidgets import (
     QMainWindow, QLabel, QApplication, QVBoxLayout, QPushButton, QGridLayout, QWidget, QScrollArea, QFileDialog
@@ -223,13 +223,15 @@ class QtBookReader(QMainWindow):
         self.ui.label_3.setText(str(start_word) + "/" + str(len(data_book["tokenize_book"])))
 
     def copy_book_to_dir(self):
-        file_path = QFileDialog.getOpenFileName(self, caption="Выберите книгу .fb2", filter="FB2 (*.fb2)")
+        file_path = QFileDialog.getOpenFileName(self, caption="Выберите книгу .fb2", filter="FB2 (*.fb2, *.txt)")
         if file_path[0]:
+
+            extension = ".fb2" if file_path[0].endswith(".fb2") else ".txt"
             file_dir = os.path.join(
                     "books",
                     os.path.splitext(
                         os.path.basename(file_path[0])
-                    )[0] + ".fb2"
+                    )[0] + extension
                 )
             if os.path.exists(file_dir):
                 return
@@ -267,12 +269,15 @@ class QtBookReader(QMainWindow):
 
         label_4 = QLabel(card_book)
         label_4.setObjectName(u"label_4")
-        label_4.setScaledContents(True)
-        label_4.setAlignment(Qt.AlignCenter)
-        pixmap = QPixmap()
-        pixmap.loadFromData(image)
-        label_4.setPixmap(pixmap)
-        label_4.setScaledContents(True)
+        if image:
+            label_4.setScaledContents(True)
+            label_4.setAlignment(Qt.AlignCenter)
+            pixmap = QPixmap()
+            pixmap.loadFromData(image)
+            label_4.setPixmap(pixmap)
+            label_4.setScaledContents(True)
+        else:
+            label_4.setStyleSheet("background: gray;")
 
         self.ui.verticalLayout_5.addWidget(label_4)
 
@@ -312,9 +317,16 @@ class QtBookReader(QMainWindow):
 
     def initBook(self):
         self.books = []
-        book = [b for b in os.listdir("books") if ".fb2" in b]
+        if not os.path.exists("books"):
+            os.mkdir("books")
+
+        book = [b for b in os.listdir("books") if b.endswith(".fb2") or b.endswith(".txt")]
         for index, book_path in enumerate(book):
-            book = ReaderBook("books/" + book_path).read_and_tokenize()
+            if book_path.endswith(".fb2"):
+                book = ReaderBook("books/" + book_path).read_and_tokenize()
+            else:
+                book = ReaderBookTXT("books/" + book_path).read_and_tokenize()
+
             if not book:
                 continue
 
