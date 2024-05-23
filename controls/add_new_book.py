@@ -16,7 +16,7 @@ class ControlsBook:
         file_path = QFileDialog.getOpenFileName(
             self.parent,
             caption="Выберите книгу",
-            filter="Book (('', *.fb2), ('', *.txt))"
+            filter="Book (*.fb2 *.txt)"
         )
         if file_path[0]:
 

@@ -24,7 +24,6 @@ class LoaderBooks:
                 continue
 
             book["path_book"] = "books/" + book_path
-            for _ in range(10):
-                self.parent.add_book(book)
+            self.parent.add_book(book)
 
 
